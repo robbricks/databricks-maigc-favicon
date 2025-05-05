@@ -12,13 +12,6 @@ function createColoredFavicon(color) {
   ctx.arc(16, 16, 16, 0, Math.PI * 2);
   ctx.fill();
   
-  // Add "Y" character in the center
-  ctx.fillStyle = '#000000'; // Black color for the "Y"
-  ctx.font = 'bold 30px Arial'; // Increased font size
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Y', 16, 16);
-  
   // Convert canvas to data URL
   return canvas.toDataURL('image/png');
 }

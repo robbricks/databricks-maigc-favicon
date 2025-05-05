@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const removeButton = document.createElement('button');
     removeButton.className = 'remove-btn';
-    removeButton.textContent = '×';
+    removeButton.textContent = 'X';
     removeButton.onclick = () => row.remove();
     
     row.appendChild(keywordInput);
