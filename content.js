@@ -1,45 +1,53 @@
-// Create and inject the popup element
-function createPopup() {
-  const popup = document.createElement('div');
-  popup.id = 'url-display-popup';
-  popup.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    z-index: 10000;
-    max-width: 300px;
-    word-break: break-all;
-  `;
-
-  const closeButton = document.createElement('button');
-  closeButton.textContent = '×';
-  closeButton.style.cssText = `
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-  `;
-  closeButton.onclick = () => popup.remove();
-
-  const title = document.createElement('h3');
-  title.textContent = 'Current URL:';
-  title.style.margin = '0 0 10px 0';
-
-  const urlDisplay = document.createElement('div');
-  urlDisplay.textContent = window.location.href;
-
-  popup.appendChild(closeButton);
-  popup.appendChild(title);
-  popup.appendChild(urlDisplay);
-  document.body.appendChild(popup);
+// Function to create a colored favicon
+function createColoredFavicon(color) {
+  // Create a canvas element
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+  
+  // Draw a colored circle
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(16, 16, 16, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Add "Y" character in the center
+  ctx.fillStyle = '#000000'; // Black color for the "Y"
+  ctx.font = 'bold 30px Arial'; // Increased font size
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Y', 16, 16);
+  
+  // Convert canvas to data URL
+  return canvas.toDataURL('image/png');
 }
 
-// Create the popup when the page loads
-createPopup(); 
+// Function to change the favicon
+function changeFavicon(color) {
+  const link = document.createElement('link');
+  link.type = 'image/x-icon';
+  link.rel = 'icon';
+  link.href = createColoredFavicon(color);
+  
+  // Remove existing favicon
+  const existingFavicon = document.querySelector('link[rel="icon"]');
+  if (existingFavicon) {
+    existingFavicon.remove();
+  }
+  
+  document.head.appendChild(link);
+}
+
+// Check if the URL contains any of the stored keywords
+chrome.storage.sync.get(['keywords'], function(result) {
+  if (result.keywords) {
+    const currentUrl = window.location.href.toLowerCase();
+    for (const { keyword, color } of result.keywords) {
+      if (currentUrl.includes(keyword.toLowerCase())) {
+        changeFavicon(color);
+        break; // Use the first matching keyword's color
+      }
+    }
+  }
+}); 

@@ -1,25 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>URL Display</title>
+  <title>Favicon Changer Settings</title>
   <style>
     body {
-      width: 300px;
-      padding: 10px;
+      width: 400px;
+      padding: 15px;
       font-family: Arial, sans-serif;
     }
-    #url-display {
-      word-break: break-all;
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #f0f0f0;
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .keyword-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    input, select {
+      padding: 8px;
+      border: 1px solid #ccc;
       border-radius: 4px;
+    }
+    .keyword-input {
+      flex: 2;
+    }
+    .color-select {
+      flex: 1;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #add-keyword {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #add-keyword:hover {
+      background-color: #45a049;
+    }
+    #save {
+      background-color: #2196F3;
+      color: white;
+      margin-top: 10px;
+    }
+    #save:hover {
+      background-color: #0b7dda;
+    }
+    .remove-btn {
+      background-color: #f44336;
+      color: white;
+      padding: 4px 8px;
+    }
+    .remove-btn:hover {
+      background-color: #da190b;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
     }
   </style>
 </head>
 <body>
-  <h3>Current URL:</h3>
-  <div id="url-display">Loading...</div>
+  <div class="container">
+    <h3>Favicon Changer Settings</h3>
+    <div id="keyword-container">
+      <!-- Keyword rows will be added here -->
+    </div>
+    <button id="add-keyword">Add Keyword</button>
+    <button id="save">Save Settings</button>
+    <div id="status" class="status"></div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html> 

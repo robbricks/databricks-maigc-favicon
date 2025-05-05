@@ -1,22 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "URL Display Extension",
+  "name": "Custom Favicon Changer",
   "version": "1.0",
-  "description": "Displays the current tab's URL in a popup",
+  "description": "Changes favicon to green when URL contains user-defined keyword",
   "permissions": [
-    "tabs",
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
+  "action": {
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
-  ],
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "background": {
-    "service_worker": "background.js"
-  }
+  ]
 } 
