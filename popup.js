@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const addButton = document.getElementById('add-keyword');
   const saveButton = document.getElementById('save');
   const statusDiv = document.getElementById('status');
+  const showBarToggle = document.getElementById('show-bar');
 
   // Color options
   const colorOptions = [
@@ -55,8 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
     keywordContainer.appendChild(createKeywordRow());
   });
 
-  // Load saved keywords
-  chrome.storage.sync.get(['keywords'], function(result) {
+  // Load saved settings
+  chrome.storage.sync.get(['keywords', 'showBar'], function(result) {
+    // Load keywords
     if (result.keywords && result.keywords.length > 0) {
       result.keywords.forEach(({ keyword, color }) => {
         keywordContainer.appendChild(createKeywordRow(keyword, color));
@@ -65,9 +67,14 @@ document.addEventListener('DOMContentLoaded', function() {
       // Add one default row if no saved keywords
       keywordContainer.appendChild(createKeywordRow());
     }
+
+    // Load bar toggle state
+    if (result.showBar !== undefined) {
+      showBarToggle.checked = result.showBar;
+    }
   });
 
-  // Save keywords when button is clicked
+  // Save settings when button is clicked
   saveButton.addEventListener('click', function() {
     const keywords = [];
     const rows = keywordContainer.querySelectorAll('.keyword-row');
@@ -80,18 +87,21 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-    if (keywords.length > 0) {
-      chrome.storage.sync.set({ keywords: keywords }, function() {
-        // Show success message
-        statusDiv.textContent = 'Settings saved!';
-        statusDiv.className = 'status success';
-        statusDiv.style.display = 'block';
-        
-        // Hide message after 2 seconds
-        setTimeout(() => {
-          statusDiv.style.display = 'none';
-        }, 2000);
-      });
-    }
+    const settings = {
+      keywords: keywords,
+      showBar: showBarToggle.checked
+    };
+
+    chrome.storage.sync.set(settings, function() {
+      // Show success message
+      statusDiv.textContent = 'Settings saved!';
+      statusDiv.className = 'status success';
+      statusDiv.style.display = 'block';
+      
+      // Hide message after 2 seconds
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 2000);
+    });
   });
 }); 

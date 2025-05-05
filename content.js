@@ -39,13 +39,42 @@ function changeFavicon(color) {
   document.head.appendChild(link);
 }
 
+// Function to create or update the top bar
+function updateTopBar(color) {
+  let bar = document.getElementById('custom-top-bar');
+  
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'custom-top-bar';
+    bar.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(bar);
+  }
+  
+  bar.style.backgroundColor = color;
+}
+
 // Check if the URL contains any of the stored keywords
-chrome.storage.sync.get(['keywords'], function(result) {
+chrome.storage.sync.get(['keywords', 'showBar'], function(result) {
   if (result.keywords) {
     const currentUrl = window.location.href.toLowerCase();
     for (const { keyword, color } of result.keywords) {
       if (currentUrl.includes(keyword.toLowerCase())) {
         changeFavicon(color);
+        if (result.showBar) {
+          updateTopBar(color);
+        } else {
+          const bar = document.getElementById('custom-top-bar');
+          if (bar) {
+            bar.remove();
+          }
+        }
         break; // Use the first matching keyword's color
       }
     }
