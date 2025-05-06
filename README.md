@@ -1,11 +1,10 @@
-# URL Display Chrome Extension
+# Custom Favicon Changer
 
-A simple Chrome extension that displays the current tab's URL in a popup.
+A Chrome extension that changes the favicon of a webpage to green when the URL contains a user-defined keyword.
 
 ## Features
-- Displays the current tab's URL in a popup
-- Updates automatically when switching tabs
-- Clean and simple interface
+- Changes the favicon to green when the URL contains a user-defined keyword
+- Simple and user-friendly interface
 
 ## Installation
 1. Download or clone this repository
@@ -15,17 +14,17 @@ A simple Chrome extension that displays the current tab's URL in a popup.
 
 ## Usage
 1. Click the extension icon in your Chrome toolbar
-2. The popup will display the current tab's URL
-3. The URL updates automatically when you switch tabs
+2. The extension will change the favicon to green if the URL contains the user-defined keyword
 
 ## Development
 The extension consists of the following files:
 - `manifest.json`: Extension configuration
 - `popup.html`: Popup interface
-- `popup.js`: Handles URL display in popup
+- `popup.js`: Handles user interaction
+- `content.js`: Changes the favicon based on URL
 - `background.js`: Listens for tab updates
 
 ## Permissions
 This extension requires the following permissions:
-- `tabs`: To access tab information
-- `activeTab`: To get the current tab's URL
+- `activeTab`: To access the current tab's URL
+- `storage`: To store user-defined keywords

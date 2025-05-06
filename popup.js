@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const saveButton = document.getElementById('save');
   const statusDiv = document.getElementById('status');
   const showBarToggle = document.getElementById('show-bar');
+  const enableFaviconToggle = document.getElementById('enable-favicon');
 
   // Color options
   const colorOptions = [
@@ -57,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Load saved settings
-  chrome.storage.sync.get(['keywords', 'showBar'], function(result) {
+  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
     // Load keywords
     if (result.keywords && result.keywords.length > 0) {
       result.keywords.forEach(({ keyword, color }) => {
@@ -68,10 +69,11 @@ document.addEventListener('DOMContentLoaded', function() {
       keywordContainer.appendChild(createKeywordRow());
     }
 
-    // Load bar toggle state
-    if (result.showBar !== undefined) {
-      showBarToggle.checked = result.showBar;
-    }
+    // Load bar toggle state (default to true)
+    showBarToggle.checked = result.showBar !== undefined ? result.showBar : true;
+    
+    // Load favicon toggle state (default to true)
+    enableFaviconToggle.checked = result.enableFavicon !== undefined ? result.enableFavicon : true;
   });
 
   // Save settings when button is clicked
@@ -89,7 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const settings = {
       keywords: keywords,
-      showBar: showBarToggle.checked
+      showBar: showBarToggle.checked,
+      enableFavicon: enableFaviconToggle.checked
     };
 
     chrome.storage.sync.set(settings, function() {
