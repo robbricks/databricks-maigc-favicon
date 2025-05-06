@@ -18,18 +18,25 @@ function createColoredFavicon(color) {
 
 // Function to change the favicon
 function changeFavicon(color) {
+  // Create new favicon link
   const link = document.createElement('link');
   link.type = 'image/x-icon';
   link.rel = 'icon';
   link.href = createColoredFavicon(color);
   
-  // Remove existing favicon
-  const existingFavicon = document.querySelector('link[rel="icon"]');
-  if (existingFavicon) {
-    existingFavicon.remove();
-  }
+  // Remove all existing favicon links
+  const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+  existingFavicons.forEach(favicon => favicon.remove());
   
+  // Add new favicon
   document.head.appendChild(link);
+  
+  // Also set shortcut icon for IE
+  const shortcutLink = document.createElement('link');
+  shortcutLink.type = 'image/x-icon';
+  shortcutLink.rel = 'shortcut icon';
+  shortcutLink.href = createColoredFavicon(color);
+  document.head.appendChild(shortcutLink);
 }
 
 // Function to create or update the top bar
@@ -53,23 +60,101 @@ function updateTopBar(color) {
   bar.style.backgroundColor = color;
 }
 
-// Check if the URL contains any of the stored keywords
-chrome.storage.sync.get(['keywords', 'showBar'], function(result) {
-  if (result.keywords) {
-    const currentUrl = window.location.href.toLowerCase();
-    for (const { keyword, color } of result.keywords) {
-      if (currentUrl.includes(keyword.toLowerCase())) {
-        changeFavicon(color);
-        if (result.showBar) {
-          updateTopBar(color);
-        } else {
-          const bar = document.getElementById('custom-top-bar');
-          if (bar) {
-            bar.remove();
-          }
-        }
-        break; // Use the first matching keyword's color
-      }
+// Function to check URL and update favicon/top bar
+function checkAndUpdate() {
+  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
+    if (!result.enableFavicon) {
+      console.log('Favicon exchange is disabled');
+      return;
     }
-  }
+
+    if (result.keywords) {
+      const currentUrl = window.location.href.toLowerCase();
+      console.log('Checking URL:', currentUrl);
+      let matched = false;
+      
+      for (const { keyword, color } of result.keywords) {
+        if (currentUrl.includes(keyword.toLowerCase())) {
+          console.log('Keyword matched:', keyword, 'Color:', color);
+          changeFavicon(color);
+          if (result.showBar) {
+            updateTopBar(color);
+          } else {
+            const bar = document.getElementById('custom-top-bar');
+            if (bar) {
+              bar.remove();
+            }
+          }
+          matched = true;
+          break;
+        }
+      }
+      
+      if (!matched) {
+        console.log('No keyword matched, restoring original favicon');
+        // Try to find the original favicon
+        const originalFavicon = document.querySelector('link[rel*="icon"]');
+        if (originalFavicon) {
+          changeFavicon(originalFavicon.href);
+        } else {
+          // If no original favicon found, create a default one
+          changeFavicon('#808080'); // Gray color as default
+        }
+        const bar = document.getElementById('custom-top-bar');
+        if (bar) {
+          bar.remove();
+        }
+      }
+    } else {
+      console.log('No keywords configured');
+    }
+  });
+}
+
+// Initial check
+checkAndUpdate();
+
+// Set up MutationObserver to detect URL changes
+const observer = new MutationObserver(function(mutations) {
+  mutations.forEach(function(mutation) {
+    if (mutation.type === 'attributes' && mutation.attributeName === 'href') {
+      console.log('URL attribute changed');
+      checkAndUpdate();
+    }
+  });
+});
+
+// Observe the document for URL changes
+observer.observe(document, {
+  attributes: true,
+  attributeFilter: ['href'],
+  childList: true,
+  subtree: true
+});
+
+// Listen for history changes
+window.addEventListener('popstate', function() {
+  console.log('popstate event triggered');
+  checkAndUpdate();
+});
+
+// Override history methods to catch URL changes
+const originalPushState = history.pushState;
+history.pushState = function() {
+  console.log('pushState called');
+  originalPushState.apply(this, arguments);
+  checkAndUpdate();
+};
+
+const originalReplaceState = history.replaceState;
+history.replaceState = function() {
+  console.log('replaceState called');
+  originalReplaceState.apply(this, arguments);
+  checkAndUpdate();
+};
+
+// Also listen for hash changes
+window.addEventListener('hashchange', function() {
+  console.log('hashchange event triggered');
+  checkAndUpdate();
 }); 
