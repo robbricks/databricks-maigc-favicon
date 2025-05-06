@@ -39,6 +39,21 @@ function changeFavicon(color) {
   document.head.appendChild(shortcutLink);
 }
 
+// Function to restore original favicon
+function restoreOriginalFavicon() {
+  // Remove all existing favicon links
+  const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+  existingFavicons.forEach(favicon => favicon.remove());
+  
+  // Find the original favicon in the document
+  const originalFavicon = document.querySelector('link[rel*="icon"]');
+  if (originalFavicon) {
+    // Clone and re-add the original favicon
+    const newFavicon = originalFavicon.cloneNode(true);
+    document.head.appendChild(newFavicon);
+  }
+}
+
 // Function to create or update the top bar
 function updateTopBar(color) {
   let bar = document.getElementById('custom-top-bar');
@@ -63,11 +78,6 @@ function updateTopBar(color) {
 // Function to check URL and update favicon/top bar
 function checkAndUpdate() {
   chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
-    if (!result.enableFavicon) {
-      console.log('Favicon exchange is disabled');
-      return;
-    }
-
     if (result.keywords) {
       const currentUrl = window.location.href.toLowerCase();
       console.log('Checking URL:', currentUrl);
@@ -76,7 +86,8 @@ function checkAndUpdate() {
       for (const { keyword, color } of result.keywords) {
         if (currentUrl.includes(keyword.toLowerCase())) {
           console.log('Keyword matched:', keyword, 'Color:', color);
-          changeFavicon(color);
+          
+          // Always update top bar if showBar is true
           if (result.showBar) {
             updateTopBar(color);
           } else {
@@ -85,28 +96,41 @@ function checkAndUpdate() {
               bar.remove();
             }
           }
+          
+          // Only change favicon if enableFavicon is true
+          if (result.enableFavicon) {
+            changeFavicon(color);
+          } else {
+            restoreOriginalFavicon();
+          }
+          
           matched = true;
           break;
         }
       }
       
       if (!matched) {
-        console.log('No keyword matched, restoring original favicon');
-        // Try to find the original favicon
-        const originalFavicon = document.querySelector('link[rel*="icon"]');
-        if (originalFavicon) {
-          changeFavicon(originalFavicon.href);
-        } else {
-          // If no original favicon found, create a default one
-          changeFavicon('#808080'); // Gray color as default
-        }
+        console.log('No keyword matched');
+        // Remove top bar if no match
         const bar = document.getElementById('custom-top-bar');
         if (bar) {
           bar.remove();
         }
+        
+        // Only restore original favicon if enableFavicon is true
+        if (result.enableFavicon) {
+          restoreOriginalFavicon();
+        }
       }
     } else {
       console.log('No keywords configured');
+      // Remove top bar if no keywords
+      const bar = document.getElementById('custom-top-bar');
+      if (bar) {
+        bar.remove();
+      }
+      // Restore original favicon
+      restoreOriginalFavicon();
     }
   });
 }
