@@ -1,42 +1,107 @@
 // Function to create a colored favicon
-function createColoredFavicon(color) {
+async function createColoredFavicon(color) {
   // Create a canvas element
   const canvas = document.createElement('canvas');
   canvas.width = 32;
   canvas.height = 32;
   const ctx = canvas.getContext('2d');
   
-  // Draw a colored circle
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(16, 16, 16, 0, Math.PI * 2);
-  ctx.fill();
+  // Get the current favicon style
+  const result = await chrome.storage.sync.get(['faviconStyle']);
+  const style = result.faviconStyle || 'bar';
+  
+  // Draw a default white background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, 32, 32);
+  
+  // Find the original favicon
+  const originalFavicon = document.querySelector('link[rel*="icon"]');
+  if (originalFavicon && originalFavicon.href) {
+    try {
+      // Load the original favicon
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = originalFavicon.href;
+      });
+      
+      switch (style) {
+        case 'original':
+          // Just draw the original favicon
+          ctx.drawImage(img, 0, 0, 32, 32);
+          break;
+        case 'circle':
+          // Draw a colored circle
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(16, 16, 16, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'bar':
+        default:
+          // Draw the original favicon with colored bar
+          ctx.drawImage(img, 0, 0, 32, 32);
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 23, 32, 9); // 9px height bar at the bottom
+          break;
+      }
+    } catch (error) {
+      console.error('Error loading original favicon:', error);
+      // If loading fails, draw a default icon
+      ctx.fillStyle = '#CCCCCC';
+      ctx.fillRect(8, 8, 16, 16);
+      
+      // Add colored bar for 'bar' style even if original fails
+      if (style === 'bar') {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 23, 32, 9);
+      }
+    }
+  } else {
+    // If no original favicon, draw a default icon
+    ctx.fillStyle = '#CCCCCC';
+    ctx.fillRect(8, 8, 16, 16);
+    
+    // Add colored bar for 'bar' style even if no original
+    if (style === 'bar') {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 23, 32, 9);
+    }
+  }
   
   // Convert canvas to data URL
   return canvas.toDataURL('image/png');
 }
 
 // Function to change the favicon
-function changeFavicon(color) {
-  // Create new favicon link
-  const link = document.createElement('link');
-  link.type = 'image/x-icon';
-  link.rel = 'icon';
-  link.href = createColoredFavicon(color);
-  
-  // Remove all existing favicon links
-  const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
-  existingFavicons.forEach(favicon => favicon.remove());
-  
-  // Add new favicon
-  document.head.appendChild(link);
-  
-  // Also set shortcut icon for IE
-  const shortcutLink = document.createElement('link');
-  shortcutLink.type = 'image/x-icon';
-  shortcutLink.rel = 'shortcut icon';
-  shortcutLink.href = createColoredFavicon(color);
-  document.head.appendChild(shortcutLink);
+async function changeFavicon(color) {
+  try {
+    const faviconDataUrl = await createColoredFavicon(color);
+    
+    // Create new favicon link
+    const link = document.createElement('link');
+    link.type = 'image/x-icon';
+    link.rel = 'icon';
+    link.href = faviconDataUrl;
+    
+    // Remove all existing favicon links
+    const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+    existingFavicons.forEach(favicon => favicon.remove());
+    
+    // Add new favicon
+    document.head.appendChild(link);
+    
+    // Also set shortcut icon for IE
+    const shortcutLink = document.createElement('link');
+    shortcutLink.type = 'image/x-icon';
+    shortcutLink.rel = 'shortcut icon';
+    shortcutLink.href = faviconDataUrl;
+    document.head.appendChild(shortcutLink);
+  } catch (error) {
+    console.error('Error changing favicon:', error);
+  }
 }
 
 // Function to restore original favicon
@@ -77,7 +142,7 @@ function updateTopBar(color) {
 
 // Function to check URL and update favicon/top bar
 function checkAndUpdate() {
-  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
+  chrome.storage.sync.get(['keywords', 'showBar'], function(result) {
     if (result.keywords) {
       const currentUrl = window.location.href.toLowerCase();
       console.log('Checking URL:', currentUrl);
@@ -97,12 +162,8 @@ function checkAndUpdate() {
             }
           }
           
-          // Only change favicon if enableFavicon is true
-          if (result.enableFavicon) {
-            changeFavicon(color);
-          } else {
-            restoreOriginalFavicon();
-          }
+          // Change favicon
+          changeFavicon(color);
           
           matched = true;
           break;
@@ -117,10 +178,8 @@ function checkAndUpdate() {
           bar.remove();
         }
         
-        // Only restore original favicon if enableFavicon is true
-        if (result.enableFavicon) {
-          restoreOriginalFavicon();
-        }
+        // Restore original favicon
+        restoreOriginalFavicon();
       }
     } else {
       console.log('No keywords configured');
