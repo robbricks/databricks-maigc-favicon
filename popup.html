@@ -1,17 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Favicon Changer Settings</title>
+  <title>Don't Destroy Prod (✖╭╮✖)</title>
   <style>
     body {
-      width: 400px;
+      width: 500px;
       padding: 15px;
       font-family: Arial, sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background-color: #1a1a1a;
+      color: #ffffff;
     }
     .container {
       display: flex;
       flex-direction: column;
       gap: 15px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .dark-mode-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: background-color 0.2s;
+    }
+    .dark-mode-btn:hover {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+    body.dark-mode .dark-mode-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .dark-mode-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
     }
     .keyword-row {
       display: flex;
@@ -22,8 +52,14 @@
       background-color: #f8f9fa;
       transition: background-color 0.2s;
     }
+    body.dark-mode .keyword-row {
+      background-color: #2d2d2d;
+    }
     .keyword-row:hover {
       background-color: #f1f3f5;
+    }
+    body.dark-mode .keyword-row:hover {
+      background-color: #3d3d3d;
     }
     input, select {
       padding: 8px;
@@ -32,6 +68,12 @@
       background-color: white;
       transition: border-color 0.2s;
     }
+    body.dark-mode input,
+    body.dark-mode select {
+      background-color: #2d2d2d;
+      border-color: #404040;
+      color: #ffffff;
+    }
     input:focus, select:focus {
       outline: none;
       border-color: #2196F3;
@@ -39,7 +81,7 @@
     .keyword-input {
       flex: 2;
     }
-    .color-select {
+    .color-select, .env-select {
       flex: 1;
     }
     button {
@@ -89,6 +131,10 @@
       background-color: #dff0d8;
       color: #3c763d;
     }
+    body.dark-mode .success {
+      background-color: #1e4620;
+      color: #a3d9a5;
+    }
     .toggle-container {
       display: flex;
       align-items: center;
@@ -96,6 +142,9 @@
       margin-bottom: 15px;
       padding-bottom: 15px;
       border-bottom: 1px solid #eee;
+    }
+    body.dark-mode .toggle-container {
+      border-bottom-color: #404040;
     }
     .toggle-switch {
       position: relative;
@@ -136,22 +185,84 @@
     input:checked + .toggle-slider:before {
       transform: translateX(26px);
     }
+    .info-icon {
+      color: #666;
+      cursor: help;
+      position: relative;
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #e9ecef;
+      text-align: center;
+      line-height: 16px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    body.dark-mode .info-icon {
+      color: #999;
+      background: #404040;
+    }
+    .info-icon:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px;
+      background: #333;
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: normal;
+      width: 200px;
+      text-align: center;
+      z-index: 1000;
+      margin-bottom: 5px;
+    }
+    .info-icon:hover::before {
+      content: '';
+      position: absolute;
+      bottom: calc(100% - 5px);
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 5px;
+      border-style: solid;
+      border-color: #333 transparent transparent transparent;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h3>Favicon Changer Settings</h3>
+    <div class="header">
+      <h3>Don't Destroy Prod (✖╭╮✖)</h3>
+      <button class="dark-mode-btn" title="Toggle Dark Mode">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+        </svg>
+      </button>
+    </div>
     <div class="toggle-container">
-      <span>Show Top Bar:</span>
+      <span>Show Top Bar</span>
+      <div class="info-icon" data-tooltip="Shows a colored bar at the top of the page to identify the current environment">i</div>
       <label class="toggle-switch">
         <input type="checkbox" id="show-bar">
         <span class="toggle-slider"></span>
       </label>
     </div>
     <div class="toggle-container">
-      <span>Enable Favicon Exchange:</span>
+      <span>Enable Favicon Exchange</span>
+      <div class="info-icon" data-tooltip="Changes the favicon color based on the current environment">i</div>
       <label class="toggle-switch">
         <input type="checkbox" id="enable-favicon">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-container">
+      <span>Show Environment Watermark</span>
+      <div class="info-icon" data-tooltip="Shows a draggable watermark with the current environment name">i</div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="show-watermark">
         <span class="toggle-slider"></span>
       </label>
     </div>

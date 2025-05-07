@@ -1,110 +1,133 @@
 document.addEventListener('DOMContentLoaded', function() {
   const keywordContainer = document.getElementById('keyword-container');
-  const addButton = document.getElementById('add-keyword');
-  const saveButton = document.getElementById('save');
+  const addKeywordBtn = document.getElementById('add-keyword');
+  const saveBtn = document.getElementById('save');
   const statusDiv = document.getElementById('status');
   const showBarToggle = document.getElementById('show-bar');
   const enableFaviconToggle = document.getElementById('enable-favicon');
+  const showWatermarkToggle = document.getElementById('show-watermark');
+  const darkModeBtn = document.querySelector('.dark-mode-btn');
 
-  // Color options
-  const colorOptions = [
-    { value: '#FF0000', name: 'Red' },
-    { value: '#00FF00', name: 'Green' },
-    { value: '#0000FF', name: 'Blue' },
-    { value: '#FFFF00', name: 'Yellow' },
-    { value: '#FF00FF', name: 'Magenta' },
-    { value: '#00FFFF', name: 'Cyan' },
-    { value: '#FFA500', name: 'Orange' },
-    { value: '#800080', name: 'Purple' },
-    { value: '#008000', name: 'Dark Green' },
-    { value: '#000080', name: 'Navy' }
-  ];
+  // Load saved settings
+  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon', 'showWatermark', 'darkMode'], function(result) {
+    if (result.keywords) {
+      result.keywords.forEach(keyword => addKeywordRow(keyword));
+    }
+    showBarToggle.checked = result.showBar !== false; // Default to true
+    enableFaviconToggle.checked = result.enableFavicon !== false; // Default to true
+    showWatermarkToggle.checked = result.showWatermark !== false; // Default to true
+    
+    // Apply dark mode if saved
+    if (result.darkMode) {
+      document.body.classList.add('dark-mode');
+    }
+  });
 
-  // Function to create a new keyword row
-  function createKeywordRow(keyword = '', color = '#00FF00') {
+  // Dark mode toggle
+  darkModeBtn.addEventListener('click', function() {
+    document.body.classList.toggle('dark-mode');
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    chrome.storage.sync.set({ darkMode: isDarkMode });
+  });
+
+  // Add keyword row
+  function addKeywordRow(keyword = { text: '', color: '#FF0000', env: 'prod' }) {
     const row = document.createElement('div');
     row.className = 'keyword-row';
     
-    const keywordInput = document.createElement('input');
-    keywordInput.type = 'text';
-    keywordInput.className = 'keyword-input';
-    keywordInput.placeholder = 'Enter keyword';
-    keywordInput.value = keyword;
-    
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'keyword-input';
+    textInput.placeholder = 'Enter keyword';
+    textInput.value = keyword.text;
+
     const colorSelect = document.createElement('select');
     colorSelect.className = 'color-select';
-    colorOptions.forEach(option => {
-      const opt = document.createElement('option');
-      opt.value = option.value;
-      opt.textContent = option.name;
-      opt.selected = option.value === color;
-      colorSelect.appendChild(opt);
+    const colors = [
+      { value: '#FF0000', label: 'Red' },
+      { value: '#00FF00', label: 'Green' },
+      { value: '#0000FF', label: 'Blue' },
+      { value: '#FFFF00', label: 'Yellow' },
+      { value: '#FF00FF', label: 'Purple' },
+      { value: '#00FFFF', label: 'Cyan' },
+      { value: '#FFA500', label: 'Orange' }
+    ];
+    colors.forEach(color => {
+      const option = document.createElement('option');
+      option.value = color.value;
+      option.textContent = color.label;
+      option.selected = color.value === keyword.color;
+      colorSelect.appendChild(option);
     });
-    
-    const removeButton = document.createElement('button');
-    removeButton.className = 'remove-btn';
-    removeButton.textContent = 'X';
-    removeButton.onclick = () => row.remove();
-    
-    row.appendChild(keywordInput);
+
+    const envSelect = document.createElement('select');
+    envSelect.className = 'env-select';
+    const environments = ['prod', 'staging', 'dev', 'test'];
+    environments.forEach(env => {
+      const option = document.createElement('option');
+      option.value = env;
+      option.textContent = env.charAt(0).toUpperCase() + env.slice(1);
+      option.selected = env === keyword.env;
+      envSelect.appendChild(option);
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = 'X';
+    removeBtn.onclick = function() {
+      row.remove();
+    };
+
+    row.appendChild(textInput);
     row.appendChild(colorSelect);
-    row.appendChild(removeButton);
-    return row;
+    row.appendChild(envSelect);
+    row.appendChild(removeBtn);
+    keywordContainer.appendChild(row);
   }
 
   // Add new keyword row
-  addButton.addEventListener('click', () => {
-    keywordContainer.appendChild(createKeywordRow());
-  });
+  addKeywordBtn.addEventListener('click', () => addKeywordRow());
 
-  // Load saved settings
-  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
-    // Load keywords
-    if (result.keywords && result.keywords.length > 0) {
-      result.keywords.forEach(({ keyword, color }) => {
-        keywordContainer.appendChild(createKeywordRow(keyword, color));
-      });
-    } else {
-      // Add one default row if no saved keywords
-      keywordContainer.appendChild(createKeywordRow());
-    }
-
-    // Load bar toggle state (default to true)
-    showBarToggle.checked = result.showBar !== undefined ? result.showBar : true;
-    
-    // Load favicon toggle state (default to true)
-    enableFaviconToggle.checked = result.enableFavicon !== undefined ? result.enableFavicon : true;
-  });
-
-  // Save settings when button is clicked
-  saveButton.addEventListener('click', function() {
+  // Save settings
+  saveBtn.addEventListener('click', function() {
     const keywords = [];
-    const rows = keywordContainer.querySelectorAll('.keyword-row');
-    
-    rows.forEach(row => {
-      const keyword = row.querySelector('.keyword-input').value.trim();
-      const color = row.querySelector('.color-select').value;
-      if (keyword) {
-        keywords.push({ keyword, color });
+    document.querySelectorAll('.keyword-row').forEach(row => {
+      const text = row.querySelector('.keyword-input').value.trim();
+      if (text) {
+        keywords.push({
+          text: text,
+          color: row.querySelector('.color-select').value,
+          env: row.querySelector('.env-select').value
+        });
       }
     });
 
-    const settings = {
+    chrome.storage.sync.set({
       keywords: keywords,
       showBar: showBarToggle.checked,
-      enableFavicon: enableFaviconToggle.checked
-    };
-
-    chrome.storage.sync.set(settings, function() {
-      // Show success message
+      enableFavicon: enableFaviconToggle.checked,
+      showWatermark: showWatermarkToggle.checked,
+      darkMode: document.body.classList.contains('dark-mode')
+    }, function() {
       statusDiv.textContent = 'Settings saved!';
       statusDiv.className = 'status success';
       statusDiv.style.display = 'block';
-      
-      // Hide message after 2 seconds
       setTimeout(() => {
         statusDiv.style.display = 'none';
       }, 2000);
+
+      // Notify content script about settings change
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          action: 'settingsUpdated',
+          settings: {
+            keywords: keywords,
+            showBar: showBarToggle.checked,
+            enableFavicon: enableFaviconToggle.checked,
+            showWatermark: showWatermarkToggle.checked
+          }
+        });
+      });
     });
   });
 }); 
