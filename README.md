@@ -1,4 +1,4 @@
-# Don't Destroy Prod (✖╭╮✖)
+# Am I in PROD?
 
 A Chrome extension that helps prevent accidental changes to production environments by providing clear visual indicators of the current environment.
 
