@@ -134,17 +134,23 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => { saveConfirm.style.opacity = 1; }, 10);
       setTimeout(() => { saveConfirm.style.opacity = 0; }, 1800);
       setTimeout(() => { saveConfirm.style.display = 'none'; }, 2300);
+      
       // Notify content script about settings change
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'settingsUpdated',
-          settings: {
-            keywords: keywords,
-            showBar: showBarToggle.checked,
-            faviconStyle: faviconStyleSelect.value,
-            showWatermark: showWatermarkToggle.checked
-          }
-        });
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'settingsUpdated',
+            settings: {
+              keywords: keywords,
+              showBar: showBarToggle.checked,
+              faviconStyle: faviconStyleSelect.value,
+              showWatermark: showWatermarkToggle.checked
+            }
+          }).catch(error => {
+            // Ignore the error - it's expected if the content script isn't ready
+            console.log('Content script not ready:', error);
+          });
+        }
       });
     });
   });
