@@ -5,9 +5,13 @@
   <style>
     body {
       width: 500px;
+      min-height: 700px;
+      max-height: none;
+      height: auto;
       padding: 15px;
       font-family: Arial, sans-serif;
       transition: background-color 0.3s, color 0.3s;
+      overflow: visible !important;
     }
     body.dark-mode {
       background-color: #1a1a1a;
@@ -143,12 +147,12 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 15px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #eee;
+      margin-bottom: 8px;
+      padding-bottom: 0;
+      border-bottom: none;
     }
     body.dark-mode .toggle-container {
-      border-bottom-color: #404040;
+      border-bottom-color: transparent;
     }
     .toggle-switch {
       position: relative;
@@ -234,31 +238,44 @@
       border-style: solid;
       border-color: #333 transparent transparent transparent;
     }
+    .favicon-select {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s ease;
+    }
+    .favicon-select:hover {
+      border-color: #666;
+    }
+    .dark-mode .favicon-select {
+      background-color: #333;
+      color: #fff;
+      border-color: #555;
+    }
+    .dark-mode .favicon-select:hover {
+      border-color: #777;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h3>Am I in PROD?</h3>
+      <img src="images/logo.png" alt="Don't Destroy Prod Logo" style="height:36px;width:auto;margin-right:12px;vertical-align:middle;">
       <button class="dark-mode-btn" title="Toggle Dark Mode">
         <svg viewBox="0 0 24 24">
           <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
         </svg>
       </button>
     </div>
+    <h2 class="section-heading"><img src="images/icon-32.ico" style="height:20px;width:20px;vertical-align:middle;margin-right:6px;">Display Settings</h2>
     <div class="toggle-container">
       <span>Show Top Bar</span>
       <div class="info-icon" data-tooltip="Shows a colored bar at the top of the page to identify the current environment">i</div>
       <label class="toggle-switch">
         <input type="checkbox" id="show-bar">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="toggle-container">
-      <span>Enable Favicon Exchange</span>
-      <div class="info-icon" data-tooltip="Changes the favicon color based on the current environment">i</div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="enable-favicon">
         <span class="toggle-slider"></span>
       </label>
     </div>
@@ -270,12 +287,32 @@
         <span class="toggle-slider"></span>
       </label>
     </div>
+    <div class="toggle-container">
+      <span>Favicon Style</span>
+      <div class="info-icon" data-tooltip="Choose how the favicon should be displayed">i</div>
+      <select id="favicon-style" class="favicon-select">
+        <option value="original">OG favicon</option>
+        <option value="color-bar">OG favicon with color bar</option>
+        <option value="colored-circle">Colored circle favicon</option>
+      </select>
+    </div>
+    <h2 class="section-heading"><img src="images/icon-32.ico" style="height:20px;width:20px;vertical-align:middle;margin-right:6px;">Environments</h2>
+    <div class="env-label-row" style="display:flex;gap:10px;margin-bottom:4px;font-weight:bold;">
+      <span style="flex:2;">Keyword</span>
+      <span style="flex:1;">Color</span>
+      <span style="flex:1;">Environment</span>
+      <span style="width:24px;"></span>
+    </div>
     <div id="keyword-container">
       <!-- Keyword rows will be added here -->
     </div>
-    <button id="add-keyword">Add Keyword</button>
-    <button id="save">Save Settings</button>
+    <button id="add-keyword" style="margin-bottom:16px;">
+      Add new environment
+      <span class="info-icon" data-tooltip="This text will be checked against all web page URLs you open. If the URL contains this text, the environment settings will apply.">i</span>
+    </button>
+    <button id="save" style="font-size:1.2em;font-weight:bold;padding:16px 0;position:sticky;bottom:0;width:100%;z-index:10;">Save Settings</button>
     <div id="status" class="status"></div>
+    <div id="save-confirm" style="display:none;position:fixed;left:0;right:0;bottom:10px;margin:auto;width:fit-content;padding:12px 24px;background:#dff0d8;color:#3c763d;border-radius:8px;font-size:1.1em;box-shadow:0 2px 8px rgba(0,0,0,0.15);opacity:0;transition:opacity 0.5s;z-index:9999;">✅ Settings saved</div>
   </div>
   <script src="popup.js"></script>
 </body>

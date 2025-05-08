@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Custom Favicon Changer",
+  "name": "Don't Destroy Prod (✖╭╮✖)",
   "version": "1.0",
   "description": "Changes favicon to green when URL contains user-defined keyword",
   "permissions": [
@@ -15,5 +15,11 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
-  ]
+  ],
+  "icons": {
+    "16": "images/fav-16.png",
+    "32": "images/fav-32.png",
+    "48": "images/fav-48.png",
+    "128": "images/fav-128.png"
+  }
 } 

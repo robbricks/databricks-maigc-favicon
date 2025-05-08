@@ -19,19 +19,52 @@ function createColoredFavicon(color) {
   return canvas.toDataURL('image/png');
 }
 
-// Function to change the favicon
-function changeFavicon(color) {
+// Function to create a colored favicon with a color bar
+function createColoredFaviconWithBar(color, callback) {
+  const originalFavicon = document.querySelector('link[rel*="icon"]');
+  if (!originalFavicon) return;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = originalFavicon.href;
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, 32, 28); // Draw original favicon
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 28, 32, 4); // Draw color bar
+    callback(canvas.toDataURL('image/png'));
+  };
+}
+
+// Function to change the favicon based on style
+function changeFavicon(color, style) {
+  if (style === 'original') {
+    // Restore original favicon
+    restoreOriginalFavicon();
+    return;
+  }
+  if (style === 'color-bar') {
+    createColoredFaviconWithBar(color, function(dataUrl) {
+      setFavicon(dataUrl);
+    });
+    return;
+  }
+  if (style === 'colored-circle') {
+    setFavicon(createColoredFavicon(color));
+    return;
+  }
+}
+
+function setFavicon(dataUrl) {
   const link = document.createElement('link');
   link.type = 'image/x-icon';
   link.rel = 'icon';
-  link.href = createColoredFavicon(color);
-  
+  link.href = dataUrl;
   // Remove existing favicon
   const existingFavicon = document.querySelector('link[rel="icon"]');
-  if (existingFavicon) {
-    existingFavicon.remove();
-  }
-  
+  if (existingFavicon) existingFavicon.remove();
   document.head.appendChild(link);
 }
 
@@ -137,21 +170,16 @@ function updateEnvWatermark(env, color) {
 }
 
 // Check if the URL contains any of the stored keywords
-chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
+chrome.storage.sync.get(['keywords', 'showBar', 'faviconStyle'], function(result) {
   if (result.keywords) {
     const currentUrl = window.location.href.toLowerCase();
     for (const { keyword, color, env } of result.keywords) {
       if (currentUrl.includes(keyword.toLowerCase())) {
-        if (result.enableFavicon) {
-          changeFavicon(color);
+        if (result.faviconStyle) {
+          changeFavicon(color, result.faviconStyle);
         }
         if (result.showBar) {
           updateTopBar(color);
-        } else {
-          const bar = document.getElementById('custom-top-bar');
-          if (bar) {
-            bar.remove();
-          }
         }
         updateEnvWatermark(env, color);
         break; // Use the first matching keyword's color
@@ -177,7 +205,7 @@ function restoreOriginalFavicon() {
 
 // Function to check URL and update favicon/top bar
 function checkAndUpdate() {
-  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon'], function(result) {
+  chrome.storage.sync.get(['keywords', 'showBar', 'faviconStyle'], function(result) {
     if (result.keywords) {
       const currentUrl = window.location.href.toLowerCase();
       console.log('Checking URL:', currentUrl);
@@ -198,8 +226,8 @@ function checkAndUpdate() {
           }
           
           // Only change favicon if enableFavicon is true
-          if (result.enableFavicon) {
-            changeFavicon(color);
+          if (result.faviconStyle) {
+            changeFavicon(color, result.faviconStyle);
           } else {
             restoreOriginalFavicon();
           }
@@ -218,7 +246,7 @@ function checkAndUpdate() {
         }
         
         // Only restore original favicon if enableFavicon is true
-        if (result.enableFavicon) {
+        if (result.faviconStyle) {
           restoreOriginalFavicon();
         }
       }
@@ -339,11 +367,11 @@ function updateFavicon(color) {
 
 // Check URL against keywords and update UI
 function checkUrlAndUpdate() {
-  chrome.storage.sync.get(['keywords', 'showBar', 'enableFavicon', 'showWatermark'], function(result) {
+  chrome.storage.sync.get(['keywords', 'showBar', 'faviconStyle', 'showWatermark'], function(result) {
     const url = window.location.href;
     const keywords = result.keywords || [];
     const showBar = result.showBar !== false; // Default to true
-    const enableFavicon = result.enableFavicon !== false; // Default to true
+    const faviconStyle = result.faviconStyle || 'original'; // Default to 'original'
     const showWatermark = result.showWatermark !== false; // Default to true
 
     // Find matching keyword
@@ -357,8 +385,8 @@ function checkUrlAndUpdate() {
         topBar = null;
       }
 
-      if (enableFavicon) {
-        updateFavicon(match.color);
+      if (faviconStyle) {
+        changeFavicon(match.color, faviconStyle);
       }
 
       if (showWatermark) {
