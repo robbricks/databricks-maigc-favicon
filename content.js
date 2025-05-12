@@ -2,18 +2,73 @@ let topBar = null;
 let currentFavicon = null;
 
 // Function to create a colored favicon
-function createColoredFavicon(color) {
+async function createColoredFavicon(color) {
   // Create a canvas element
   const canvas = document.createElement('canvas');
   canvas.width = 32;
   canvas.height = 32;
   const ctx = canvas.getContext('2d');
   
-  // Draw a colored circle
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(16, 16, 16, 0, Math.PI * 2);
-  ctx.fill();
+  // Get the current favicon style
+  const result = await chrome.storage.sync.get(['faviconStyle']);
+  const style = result.faviconStyle || 'color-bar';
+  
+  // Find the original favicon
+  const originalFavicon = document.querySelector('link[rel*="icon"]');
+  if (originalFavicon && originalFavicon.href) {
+    try {
+      // Load the original favicon
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = originalFavicon.href;
+      });
+      
+      switch (style) {
+        case 'original':
+          // Just draw the original favicon
+          ctx.drawImage(img, 0, 0, 32, 32);
+          break;
+        case 'colored-circle':
+          // Draw a colored circle
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(16, 16, 16, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'color-bar':
+        default:
+          // Draw the original favicon with colored bar
+          ctx.drawImage(img, 0, 0, 32, 28); // Draw favicon slightly higher
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 28, 32, 4); // Smaller 4px height bar at the bottom
+          break;
+      }
+    } catch (error) {
+      console.error('Error loading original favicon:', error);
+      // If loading fails, draw a default icon
+      ctx.fillStyle = '#CCCCCC';
+      ctx.fillRect(8, 8, 16, 16);
+      
+      // Add colored bar for 'color-bar' style even if original fails
+      if (style === 'color-bar') {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 28, 32, 4); // Smaller 4px height bar
+      }
+    }
+  } else {
+    // If no original favicon, draw a default icon
+    ctx.fillStyle = '#CCCCCC';
+    ctx.fillRect(8, 8, 16, 16);
+    
+    // Add colored bar for 'color-bar' style even if no original
+    if (style === 'color-bar') {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 28, 32, 4); // Smaller 4px height bar
+    }
+  }
   
   // Convert canvas to data URL
   return canvas.toDataURL('image/png');
@@ -21,39 +76,95 @@ function createColoredFavicon(color) {
 
 // Function to create a colored favicon with a color bar
 function createColoredFaviconWithBar(color, callback) {
-  const originalFavicon = document.querySelector('link[rel*="icon"]');
-  if (!originalFavicon) return;
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = originalFavicon.href;
-  img.onload = function() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, 32, 28); // Draw original favicon
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 28, 32, 4); // Draw color bar
-    callback(canvas.toDataURL('image/png'));
-  };
+  // Try multiple common favicon paths
+  const faviconPaths = [
+    window.location.origin + '/favicon.ico',
+    window.location.origin + '/favicon.png',
+    window.location.origin + '/images/favicon.ico',
+    window.location.origin + '/images/favicon.png',
+    window.location.origin + '/assets/favicon.ico',
+    window.location.origin + '/assets/favicon.png'
+  ];
+
+  // For Power BI specifically
+  if (window.location.hostname.includes('powerbi.com')) {
+    faviconPaths.unshift('https://app.powerbi.com/favicon.ico');
+  }
+
+  let currentPathIndex = 0;
+
+  function tryNextFavicon() {
+    if (currentPathIndex >= faviconPaths.length) {
+      // If all paths failed, create a colored circle with bar
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw colored circle
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(16, 16, 14, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw color bar
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 28, 32, 4);
+      
+      callback(canvas.toDataURL('image/png'));
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = faviconPaths[currentPathIndex];
+    
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 32, 28); // Draw original favicon
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 28, 32, 4); // Draw color bar
+      callback(canvas.toDataURL('image/png'));
+    };
+    
+    img.onerror = function() {
+      currentPathIndex++;
+      tryNextFavicon();
+    };
+  }
+
+  tryNextFavicon();
 }
 
-// Function to change the favicon based on style
-function changeFavicon(color, style) {
-  if (style === 'original') {
-    // Restore original favicon
-    restoreOriginalFavicon();
-    return;
-  }
-  if (style === 'color-bar') {
-    createColoredFaviconWithBar(color, function(dataUrl) {
-      setFavicon(dataUrl);
-    });
-    return;
-  }
-  if (style === 'colored-circle') {
-    setFavicon(createColoredFavicon(color));
-    return;
+// Function to change the favicon
+async function changeFavicon(color, style) {
+  try {
+    const faviconDataUrl = await createColoredFavicon(color);
+    
+    // Create new favicon link
+    const link = document.createElement('link');
+    link.type = 'image/x-icon';
+    link.rel = 'icon';
+    link.href = faviconDataUrl;
+    
+    // Remove all existing favicon links
+    const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+    existingFavicons.forEach(favicon => favicon.remove());
+    
+    // Add new favicon
+    document.head.appendChild(link);
+    
+    // Also set shortcut icon for IE
+    const shortcutLink = document.createElement('link');
+    shortcutLink.type = 'image/x-icon';
+    shortcutLink.rel = 'shortcut icon';
+    shortcutLink.href = faviconDataUrl;
+    document.head.appendChild(shortcutLink);
+  } catch (error) {
+    console.error('Error changing favicon:', error);
   }
 }
 
@@ -174,7 +285,22 @@ chrome.storage.sync.get(['keywords', 'showBar', 'faviconStyle'], function(result
   if (result.keywords) {
     const currentUrl = window.location.href.toLowerCase();
     for (const { keyword, color, env } of result.keywords) {
-      if (currentUrl.includes(keyword.toLowerCase())) {
+      // Handle string, array, and comma-separated string of keywords
+      let keywords;
+      if (Array.isArray(keyword)) {
+        keywords = keyword;
+      } else if (typeof keyword === 'string') {
+        // Split by comma and handle both with and without spaces
+        keywords = keyword.split(',').map(k => k.trim()).filter(k => k.length > 0);
+      } else {
+        keywords = [keyword];
+      }
+      
+      console.log('Checking keywords:', keywords);
+      
+      // Check if any of the keywords match
+      if (keywords.some(k => currentUrl.includes(k.toLowerCase()))) {
+        console.log('Match found for keywords:', keywords);
         if (result.faviconStyle) {
           changeFavicon(color, result.faviconStyle);
         }
@@ -212,8 +338,22 @@ function checkAndUpdate() {
       let matched = false;
       
       for (const { keyword, color } of result.keywords) {
-        if (currentUrl.includes(keyword.toLowerCase())) {
-          console.log('Keyword matched:', keyword, 'Color:', color);
+        // Handle string, array, and comma-separated string of keywords
+        let keywords;
+        if (Array.isArray(keyword)) {
+          keywords = keyword;
+        } else if (typeof keyword === 'string') {
+          // Split by comma and handle both with and without spaces
+          keywords = keyword.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        } else {
+          keywords = [keyword];
+        }
+        
+        console.log('Checking keywords:', keywords);
+        
+        // Check if any of the keywords match
+        if (keywords.some(k => currentUrl.includes(k.toLowerCase()))) {
+          console.log('Match found for keywords:', keywords);
           
           // Always update top bar if showBar is true
           if (result.showBar) {
