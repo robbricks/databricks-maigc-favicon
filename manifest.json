@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Don't Destroy Prod (✖╭╮✖)",
-  "version": "1.0",
-  "description": "Changes favicon to green when URL contains user-defined keyword",
+  "version": "1.0.1",
+  "description": "Prevents accidental production changes with visual indicators: colored bars, custom favicons, and watermarks.",
   "permissions": [
     "activeTab",
     "storage"
